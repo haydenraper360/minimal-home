@@ -244,17 +244,19 @@ class MainActivity : Activity() {
             setMargins(0, dp(28), dp(48), 0)
         })
 
+        // Scrolling list of app names down the left side.
         dock = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER
-            setPadding(dp(22), dp(16), dp(22), dp(16))
-            background = GradientDrawable().apply {
-                cornerRadius = dp(30).toFloat(); setColor(0x55101018)
-                setStroke(dp(1), 0x33FFFFFF)
-            }
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(8), dp(8), dp(8), dp(8))
         }
-        root.addView(dock, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply {
-            bottomMargin = dp(36)
+        val listScroll = ScrollView(this).apply {
+            isFillViewport = true
+            isVerticalScrollBarEnabled = false
+            addView(dock, FrameLayout.LayoutParams(-1, -2))
+        }
+        root.addView(listScroll, FrameLayout.LayoutParams(dp(460), -1, Gravity.START).apply {
+            setMargins(dp(72), dp(90), 0, dp(50))
         })
         setContentView(root)
         buildDock()
@@ -267,12 +269,6 @@ class MainActivity : Activity() {
         }
         return null
     }
-
-    private fun iconFor(pkg: String): Drawable? = try {
-        val pm = packageManager
-        val info = pm.getApplicationInfo(pkg, 0)
-        pm.getApplicationBanner(pkg) ?: pm.getApplicationIcon(info)
-    } catch (e: Exception) { null }
 
     private fun tile(label: String, icon: Drawable?, onOpen: () -> Unit, size: Int = 84): View {
         val col = LinearLayout(this).apply {
@@ -312,21 +308,49 @@ class MainActivity : Activity() {
         return col
     }
 
+    private fun row(label: String, dim: Boolean, onOpen: () -> Unit): View {
+        val baseAlpha = if (dim) 0.5f else 1f
+        return TextView(this).apply {
+            text = label
+            textSize = 26f
+            setTextColor(Color.WHITE)
+            alpha = baseAlpha
+            typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
+            setShadowLayer(8f, 0f, 2f, 0x99000000.toInt())
+            setPadding(dp(24), dp(12), dp(24), dp(12))
+            isFocusable = true
+            isClickable = true
+            setOnClickListener { onOpen() }
+            setOnFocusChangeListener { v, has ->
+                v.pivotX = 0f
+                v.pivotY = v.height / 2f
+                v.animate().scaleX(if (has) 1.06f else 1f).scaleY(if (has) 1.06f else 1f).setDuration(120).start()
+                v.alpha = if (has) 1f else baseAlpha
+                v.background = if (has) GradientDrawable().apply {
+                    cornerRadius = dp(16).toFloat(); setColor(0x44FFFFFF)
+                } else null
+            }
+        }
+    }
+
+    private fun addRow(label: String, dim: Boolean, onOpen: () -> Unit) {
+        dock.addView(row(label, dim, onOpen), LinearLayout.LayoutParams(-1, -2))
+    }
+
     private fun buildDock() {
         dock.removeAllViews()
         for (f in FAVOURITES) {
             val found = launchIntentFor(f.packages)
-            val view = if (found != null) {
-                tile(f.label, iconFor(found.first), { startActivitySafe(found.second) })
+            if (found != null) {
+                addRow(f.label, false) { startActivitySafe(found.second) }
             } else {
-                tile(f.label, null, {
+                addRow(f.label + "  (not installed)", true) {
                     startActivitySafe(Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=" + Uri.encode(f.label))))
-                })
+                }
             }
-            dock.addView(view, LinearLayout.LayoutParams(-2, -2).apply { setMargins(dp(4), 0, dp(4), 0) })
         }
-        dock.addView(tile("All apps", null, { showAllApps() }), LinearLayout.LayoutParams(-2, -2).apply { setMargins(dp(14), 0, dp(4), 0) })
-        dock.addView(tile("Settings", null, { startActivitySafe(Intent(Settings.ACTION_SETTINGS)) }), LinearLayout.LayoutParams(-2, -2).apply { setMargins(dp(4), 0, dp(4), 0) })
+        addRow("All apps", false) { showAllApps() }
+        addRow("Settings", false) { startActivitySafe(Intent(Settings.ACTION_SETTINGS)) }
         dock.getChildAt(0)?.requestFocus()
     }
 
