@@ -200,7 +200,6 @@ class MainActivity : Activity() {
         Fav("YouTube", listOf("com.google.android.youtube.tv", "com.google.android.youtube.tvunplugged")),
         Fav("Netflix", listOf("com.netflix.ninja")),
         Fav("Prime Video", listOf("com.amazon.amazonvideo.livingroom", "com.amazon.avod")),
-        Fav("Paramount+", listOf("com.cbs.ott", "com.cbs.tve")),
         Fav("NFL+", listOf("com.gotv.nflgamecenter.us.lite", "com.nfl.gamepass")),
         Fav("HBO Max", listOf("com.wbd.stream", "com.hbo.hbonow", "com.hbo.hbomax")),
     )
